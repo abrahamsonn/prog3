@@ -4,7 +4,7 @@ Created on Oct 12, 2016
 @author: mwitt_000
 '''
 
-import queue
+import Queue
 import threading
 
 ## An abstraction of a link between router interfaces

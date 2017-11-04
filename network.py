@@ -3,9 +3,10 @@ Created on Oct 12, 2016
 
 @author: mwitt_000
 '''
-import queue
+import Queue as queue
 import threading
 
+max_mtu_size = 50
 
 ## wrapper class for a queue of packets
 class Interface:
@@ -130,15 +131,17 @@ class Router:
                 pkt_S = self.in_intf_L[i].get()
                 #if packet exists make a forwarding decision
                 if pkt_S is not None:
-                    p = NetworkPacket.from_byte_S(pkt_S) #parse a packet out
+                    parsed_packet = NetworkPacket.from_byte_S(pkt_S) #parse a packet out
+                    print "\tparsed packet length: " + str(len(parsed_packet))
+                    print "HELLOOOOOOOOO"
                     # HERE you will need to implement a lookup into the 
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
-                    self.out_intf_L[i].put(p.to_byte_S(), True)
+                    self.out_intf_L[i].put(parsed_packet.to_byte_S(), True)
                     print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                        % (self, p, i, i, self.out_intf_L[i].mtu))
+                        % (self, parsed_packet, i, i, self.out_intf_L[i].mtu))
             except queue.Full:
-                print('%s: packet "%s" lost on interface %d' % (self, p, i))
+                print('%s: packet "%s" lost on interface %d' % (self, parsed_packet, i))
                 pass
                 
     ## thread target for the host to keep forwarding data
