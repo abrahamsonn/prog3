@@ -43,9 +43,9 @@ class Link:
         #otherwise transmit the packet
         try:
             self.out_intf.put(pkt_S)
-            print('%s: transmitting packet "%s"' % (self, pkt_S))
+#            print('%s: transmitting packet "%s"' % (self, pkt_S))
         except queue.Full:
-            print('%s: packet lost' % (self))
+#            print('%s: packet lost' % (self))
             pass
         
         
@@ -68,12 +68,12 @@ class LinkLayer:
                 
     ## thread target for the network to keep transmitting data across links
     def run(self):
-        print (threading.currentThread().getName() + ': Starting')
+#        print (threading.currentThread().getName() + ': Starting')
         while True:
             #transfer one packet on all the links
             self.transfer()
             #terminate
             if self.stop:
-                print (threading.currentThread().getName() + ': Ending')
+#                print (threading.currentThread().getName() + ': Ending')
                 return
     

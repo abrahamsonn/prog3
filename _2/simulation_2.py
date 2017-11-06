@@ -3,8 +3,8 @@ Created on Oct 12, 2016
 
 @author: mwitt_000
 '''
-import network_1
-import link_1
+import network_2_2
+import link_2
 import threading
 from time import sleep
 
@@ -16,21 +16,21 @@ if __name__ == '__main__':
     object_L = [] #keeps track of objects, so we can kill their threads
     
     #create network nodes
-    client = network_1.Host(1)
+    client = network_2_2.Host(1)
     object_L.append(client)
-    server = network_1.Host(2)
+    server = network_2_2.Host(2)
     object_L.append(server)
-    router_a = network_1.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
+    router_a = network_2_2.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
     object_L.append(router_a)
     # object_L = an object list
     
     #create a Link Layer to keep track of links between network nodes
-    link_layer = link_1.LinkLayer()
+    link_layer = link_2.LinkLayer()
     object_L.append(link_layer)
     
     #add all the links
-    link_layer.add_link(link_1.Link(client, 0, router_a, 0, 40))
-    link_layer.add_link(link_1.Link(router_a, 0, server, 0, 40))
+    link_layer.add_link(link_2.Link(client, 0, router_a, 0, 40))
+    link_layer.add_link(link_2.Link(router_a, 0, server, 0, 40))
     
     
     #start all the objects
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     
     #create some send events    
     for i in range(3):
-        client.udt_send(2, ' Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse feugiat, mauris amet. %d' % i)
+        client.udt_send(2, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse feugiat, mauris amet.')
     
     
     #give the network sufficient time to transfer all packets before quitting
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     for t in thread_L:
         t.join()
         
-    print("All simulation threads joined")
+#    print("All simulation threads joined")
 
 
 
