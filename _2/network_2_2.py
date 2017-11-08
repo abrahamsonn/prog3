@@ -102,17 +102,24 @@ class Host:
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
-        if pkt_S is not None:
+        if pkt_S != None:
             print('%s: received packet "%s"' % (self, pkt_S))
+            return pkt_S
        
     ## thread target for the host to keep receiving data
     def run(self):
 #print (threading.currentThread().getName() + ': Starting')
+        list = []
         while True:
             #receive data arriving to the in interface
-            self.udt_receive()
+            x = self.udt_receive()
+            if x != None:
+                pos = int(x[6:11]) / 20
+                # print "pos = " + str(pos)
+                list.insert(pos, x[20: ])
             #terminate
             if(self.stop):
+                print "list = " + str(list)
 #print (threading.currentThread().getName() + ': Ending')
                 return
         
@@ -191,15 +198,18 @@ class Router:
                         pure_message = parsed_packet[20 : ]
                         correctlysizedmessage = self.split_message(str(pure_message))
                         # "correctlysizedmessage" + str(correctlysizedmessage)
+                        index = 0
                         for fragment in correctlysizedmessage:
                             well_formed_datagram = str(len(fragment)).zfill(4) + \
                                                    str(ID).zfill(2) + \
-                                                   str(self.max_mtu_size - 20) + \
+                                                   str((self.max_mtu_size - 20) * index).zfill(4) + \
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
                             print "WFD: " + well_formed_datagram + "\n\n"
                             self.out_intf_L[i].put(well_formed_datagram, True)
+
+                            index += 1
 
                     else:
                         print "From " + str(source) + " to " + str(dst_addr) + ":"
