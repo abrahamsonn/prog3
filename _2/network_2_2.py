@@ -94,6 +94,7 @@ class Host:
                         + str(dst_addr).zfill(4)\
                         + str(data_S)
         p = NetworkPacket(full_datagram)
+        print 'Host_%s sending packet "%s"\n\n' % (self.addr, p.to_byte_S())
         self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
 
         self.packet_count += 1
@@ -180,7 +181,7 @@ class Router:
 
                     # ID = str(parsed_packet[4]) + str(parsed_packet[5])
                     ID = parsed_packet[4:6]
-                    print "ID: " + str(ID)
+                    #print "ID: " + str(ID)
                     dst_addr = parsed_packet[16: 20]
                     source = parsed_packet[12: 16]
                     header = parsed_packet[0: 19]
@@ -197,7 +198,7 @@ class Router:
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
-                            #print "WFD: " + well_formed_datagram
+                            print "WFD: " + well_formed_datagram + "\n\n"
                             self.out_intf_L[i].put(well_formed_datagram, True)
 
                     else:
