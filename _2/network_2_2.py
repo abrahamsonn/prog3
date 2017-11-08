@@ -101,8 +101,8 @@ class Host:
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
-#        if pkt_S is not None:
-#print('%s: received packet "%s"' % (self, pkt_S))
+        if pkt_S is not None:
+            print('%s: received packet "%s"' % (self, pkt_S))
        
     ## thread target for the host to keep receiving data
     def run(self):
@@ -189,7 +189,7 @@ class Router:
                     if len(parsed_packet) > self.max_mtu_size:
                         pure_message = parsed_packet[20 : ]
                         correctlysizedmessage = self.split_message(str(pure_message))
-                        print "correctlysizedmessage" + str(correctlysizedmessage)
+                        # "correctlysizedmessage" + str(correctlysizedmessage)
                         for fragment in correctlysizedmessage:
                             well_formed_datagram = str(len(fragment)).zfill(4) + \
                                                    str(ID).zfill(2) + \
@@ -197,7 +197,8 @@ class Router:
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
-                            print "WFD: " + well_formed_datagram
+                            #print "WFD: " + well_formed_datagram
+                            self.out_intf_L[i].put(well_formed_datagram, True)
 
                     else:
                         print "From " + str(source) + " to " + str(dst_addr) + ":"
