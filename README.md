@@ -3,21 +3,21 @@
 ## Custom datagram format
 
 ```
-0040032000010002Lorem ipsum dolor sit amet, consectetur 
-0040032000010002adipiscing elit. Suspendisse feugiat, ma
-0010032000010002uris amet.
+00400320000000010002Lorem ipsum dolor sit amet, consectetur 
+00400320000000010002adipiscing elit. Suspendisse feugiat, ma
+00100320000000010002uris amet.
 ```
 
-characters 1 - 4:   datagram message (body) length
+characters 0 - 3:   datagram message (body) length
 
-characters 4 - 6:   ID
+characters 4 - 5:   ID
 
-characters 6 - 8:   fragmentation offset
+characters 6 - 7:   fragmentation offset
 
-characters 8 - 12:  no use yet
+characters 8 - 11:  no use yet
 
-characters 12 - 16: source
+characters 12 - 15: source
 
-characters 16 - 20: destination
+characters 15 - 19: destination
 
 
