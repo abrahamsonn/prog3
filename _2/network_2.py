@@ -6,7 +6,6 @@ Created on Oct 12, 2016
 import Queue as queue
 import threading
 import re
-import string
 
 ## wrapper class for a queue of packets
 class Interface:
@@ -38,31 +37,30 @@ class NetworkPacket:
     
     ##@param dst_addr: address of the destination host
     # @param data_S: packet payload
-    def __init__(self, dg_length, ID, frag_flag, frag_offset, source_addr, dst_addr, data_S):
-        self.dg_length = 20 + len(data_S)
-        self.ID = ID
-        self.frag_flag = frag_flag
-        self.frag_offset = frag_offset
-        self.source_addr = source_addr
-        self.dst_addr = dst_addr
-        self.data_S = data_S
-        
+    def __init__(self, data_S):
+        self.complete_string = data_S
+        self.dst_addr = data_S[16 : 20]
+        self.source = data_S[12 : 16]
+        self.header = data_S[0 : 19]
+        self.data_S = data_S[20 : ]
+
+
     ## called when printing the object
     def __str__(self):
         return self.to_byte_S()
         
     ## convert packet to a byte string for transmission over links
     def to_byte_S(self):
-        byte_S += self.data_S
         byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
-        return byte_S
+        byte_S += self.data_S
+        return self.complete_string
     
     ## extract a packet object from a byte string
     # @param byte_S: byte string representation of the packet
     @classmethod
     def from_byte_S(self, byte_S):
-        header = byte_S[0 : 19]
-        data_S = byte_S[20 : ]
+        dst_addr = int(byte_S[0 : NetworkPacket.dst_addr_S_length])
+        data_S = byte_S[19 : ]
         return byte_S
     
 
@@ -70,8 +68,8 @@ class NetworkPacket:
 
 ## Implements a network host for receiving and transmitting data
 class Host:
-    
-    packet_count = 0
+
+    packet_count = 1
 
     ##@param addr: address of this node represented as an integer
     def __init__(self, addr):
@@ -88,45 +86,78 @@ class Host:
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst_addr, data_S):
-        p = NetworkPacket( 20 + len(data_S),
-                           self.packet_count,
-                           0,
-                           0,
-                           self.addr,
-                           dst_addr,
-                           data_S)
+        full_datagram = str(len(data_S)).zfill(4)\
+                        + str(self.packet_count).zfill(2)\
+                        + "0000"\
+                        + str(self.addr).zfill(4)\
+                        + str(dst_addr).zfill(4)\
+                        + str(data_S)
+        p = NetworkPacket(full_datagram)
         self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
-        print('%s: sending packet "%s" out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
+
         self.packet_count += 1
-        
+
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
-        if pkt_S is not None:
-            print('%s: received packet "%s"' % (self, pkt_S))
+        if pkt_S != None:
+            return pkt_S
+
+#        if pkt_S is not None:
+#print('%s: received packet "%s"' % (self, pkt_S))
        
     ## thread target for the host to keep receiving data
     def run(self):
-        print (threading.currentThread().getName() + ': Starting')
+#print (threading.currentThread().getName() + ': Starting')
+        list = []
+        correct_list = []
         while True:
             #receive data arriving to the in interface
-            self.udt_receive()
+
+            x = self.udt_receive()
+            if x != None:
+                #insertion_point = x[]
+                #list.insert(x)
+                #list.append(x)
+                #print "x = " + str(x)
+                pos = int(x[6:10]) / 20
+                #print "pos = " + str(pos)
+                correct_list.insert(pos, x[20: ])
+                print "inserting string at position " + str(pos) + ": " + str(x[20: ])
             #terminate
             if(self.stop):
-                print (threading.currentThread().getName() + ': Ending')
+                print correct_list
+                #for fragment in list:
+
+#print (threading.currentThread().getName() + ': Ending')
                 return
         
 
 
 ## Implements a multi-interface router described in class
 class Router:
-    
-# each router may have a different mtu
+
     max_mtu_size = 40
 
     def split_message(self, input_string):
-        # thanks stack overflow! if only i could just use C instead to split the string up
-        return [input_string [i:i+self.max_mtu_size] for i in range(0, len(input_string), self.max_mtu_size)]
+        # thanks stack overflow! if only i could just use C instead
+        message_length = len(input_string)
+        if message_length <= 20:
+            print "Empty message foo"
+            return None
+        else:
+            dst_addr = input_string[16: 20]
+            source = input_string[12: 16]
+            header = input_string[0 : 21]
+            message = input_string[20 : ]
+            # return [ input_string [ i : i + self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
+            # each message fragment should be max_mtu_size - 20 characters in length ( - 20 so that each can have a header)
+            # fragments = [input_string [i:i+self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
+            fragments = [input_string [i:i+self.max_mtu_size] for i in range(0, message_length, self.max_mtu_size)]
+            #print fragments
+            return fragments
+
+        # return [input_string [i:i+self.max_mtu_size] for i in range(0, len(input_string), self.max_mtu_size)]
 
     ##@param name: friendly router name for debugging
     # @param intf_count: the number of input and output interfaces 
@@ -155,47 +186,45 @@ class Router:
                 if pkt_S is not None:
 
                     parsed_packet = NetworkPacket.from_byte_S(pkt_S) #parse a packet out
+#                     # get the intf numbers from the message
+#                     from_intf_num = int(re.findall('^\d+', str(parsed_packet))[0])
+# #                    if from_intf_num != None:
+# #                        print "from_intf_num: " + str(from_intf_num)
+#
+#                     to_intf_num = int(re.findall('\d+$', str(parsed_packet))[0])
+# #                    if to_intf_num != None:
+# #                        print "to_intf_num: " + str(to_intf_num)
 
-                    # get the intf numbers from the message
-#                    from_intf_num = int(re.findall('^\d+', str(parsed_packet))[0])
-#                    print "from_intf_num: " + str(from_intf_num)
-#                    to_intf_num = int(re.findall('\d+$', str(parsed_packet))[0])
-#                    print "to_intf_num: " + str(to_intf_num)
+                    # ID = str(parsed_packet[4]) + str(parsed_packet[5])
+                    ID = parsed_packet[4:6]
+                    print "ID: " + str(ID)
+                    dst_addr = parsed_packet[16: 20]
+                    source = parsed_packet[12: 16]
+                    header = parsed_packet[0: 19]
+                    message = parsed_packet[20:]
 
-                    # first 12 bytes are header bytes
-                    # the next 4 bytes are the source
-                    # next 4 are destination
-                    # and then it's just data up to byte
-                    # if the total number of those bytes > max_mtu_size, fragmentation needs to occur
-                    id = int(parsed_packet[4] + parsed_packet[5])
-                    # flag = # get a single bit from a string?
-                    # fragmentation_offset =
-                    print "PARSED_PACKET = " + parsed_packet
-                    source = int(parsed_packet[11] + parsed_packet[12] + parsed_packet[13] + parsed_packet[14]) # the numbers are hard-coded in
-                    dest = int(parsed_packet[15] + parsed_packet[16] + parsed_packet[17] + parsed_packet[18], 10)  # b/c it's protocol
-                    index = 0
-                    pure_data = None
-                    for char in parsed_packet:
-                        if index >= 19 and parsed_packet != None:
-                            pure_data = pure_data + parsed_packet[index]
-                            if index == len(parsed_packet):
-                                break
-                        index += 1
-                    #once outside the for loop, all the variables are obtained.
-                    #dg id, flag, source, dest, length, message, etc.
+                    if len(parsed_packet) > self.max_mtu_size:
+                        pure_message = parsed_packet[20 : ]
+                        correctlysizedmessage = self.split_message(str(pure_message))
+                        print "correctlysizedmessage" + str(correctlysizedmessage)
+                        index = 0
+                        for fragment in correctlysizedmessage:
+                            well_formed_datagram = str(len(fragment)).zfill(4) + \
+                                                   str(ID).zfill(2) + \
+                                                   str((self.max_mtu_size - 20) * index).zfill(4) + \
+                                                   str(source).zfill(4) + \
+                                                   str(dst_addr).zfill(4) + \
+                                                   fragment
+                           # print "WFD: " + well_formed_datagram
+                            self.out_intf_L[i].put(well_formed_datagram, True)
 
-                    if len(str(parsed_packet)) > 40:
-                        fragmented_message = self.split_message(str(pure_data))
-                        print fragmented_message
+                            index += 1
+
+
                     else:
-                        self.out_intf_L[i].put(parsed_packet)
-
-# correctlysizedmessage = parsed_packet split by the max_mtu_size
-                    correctlysizedmessage = self.split_message(str(parsed_packet))
-
-                    for j in correctlysizedmessage:
-                        # put every item in the correctlysizedmessage out interface i
-                        self.out_intf_L[i].put(j, True)
+                        # print "From " + str(source) + " to " + str(dst_addr) + ":"
+                        # print message
+                        self.out_intf_L[i].put(parsed_packet, True)
 
 
                     # HERE you will need to implement a lookup into the 
@@ -206,16 +235,16 @@ class Router:
 #                        % (self, parsed_packet, i, i, self.out_intf_L[i].mtu))
 
             except queue.Full:
-                print('%s: packet "%s" lost on interface %d' % (self, parsed_packet, i))
+#                print('%s: packet "%s" lost on interface %d' % (self, parsed_packet, i))
                 pass
                 
     ## thread target for the host to keep forwarding data
     def run(self):
-        print (threading.currentThread().getName() + ': Starting')
+#        print (threading.currentThread().getName() + ': Starting')
         while True:
             self.forward()
             if self.stop:
-                print (threading.currentThread().getName() + ': Ending')
+#                print (threading.currentThread().getName() + ': Ending')
                 return 
 
 
