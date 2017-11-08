@@ -145,6 +145,7 @@ class Router:
 
     def split_message(self, input_string):
         # thanks stack overflow! if only i could just use C instead
+#print "Splitting message \"" + input_string + "\" into the following: "
         message_length = len(input_string)
         if message_length <= 20:
             print "Empty message foo"
@@ -158,6 +159,7 @@ class Router:
             # each message fragment should be max_mtu_size - 20 characters in length ( - 20 so that each can have a header)
             # fragments = [input_string [i:i+self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
             fragments = [input_string [i:i+self.max_mtu_size] for i in range(0, message_length, self.max_mtu_size)]
+#print fragments
             #print fragments
             return fragments
 
@@ -209,6 +211,7 @@ class Router:
 
                     if len(parsed_packet) > self.max_mtu_size:
                         pure_message = parsed_packet[20 : ]
+                        print "Forwarding \"" + parsed_packet + "\" as the following: "
                         correctlysizedmessage = self.split_message(str(pure_message))
                         # "correctlysizedmessage" + str(correctlysizedmessage)
                         index = 0
@@ -220,7 +223,16 @@ class Router:
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
-                            print "WFD: " + well_formed_datagram + "\n\n"
+#                            print "well-formed datagram:    " + well_formed_datagram + "\n\n"
+#                            print "fragment length:         " + str(len(fragment)).zfill(4)
+#                            print "ID:                      " + str(ID).zfill(2)
+#                            print "offset:                  " + str((self.max_mtu_size - 20) * index).zfill(2)
+#                            print "...:                     " + "0000"
+#                            print "source:                  " + str(source).zfill(4)
+#                            print "dest:                    " + str(dst_addr).zfill(4)
+
+                            print "\t" + well_formed_datagram
+
                             self.out_intf_L[i].put(well_formed_datagram, True)
 
                             index += 1
