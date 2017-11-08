@@ -43,7 +43,7 @@ class Link:
         #otherwise transmit the packet
         try:
             self.out_intf.put(pkt_S)
-            print('%s: transmitting packet "%s"' % (self, pkt_S))
+            print('%s: transmitting packet "%s"\n' % (self, pkt_S))
         except queue.Full:
             print('%s: packet lost' % (self))
             pass
