@@ -158,7 +158,7 @@ class Router:
             # return [ input_string [ i : i + self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
             # each message fragment should be max_mtu_size - 20 characters in length ( - 20 so that each can have a header)
             # fragments = [input_string [i:i+self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
-            fragments = [input_string [i:i+self.max_mtu_size] for i in range(0, message_length, self.max_mtu_size - 20)]
+            fragments = [input_string [i:i+self.max_mtu_size - 20] for i in range(0, message_length, self.max_mtu_size - 20)]
 
 #print fragments
             #print fragments
