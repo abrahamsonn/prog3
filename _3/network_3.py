@@ -60,7 +60,8 @@ class NetworkPacket:
     @classmethod
     def from_byte_S(self, byte_S):
         dst_addr = int(byte_S[0 : NetworkPacket.dst_addr_S_length])
-        data_S = byte_S[19 : ]
+        data_S = byte_S[20 : ]
+        #print '%d : %s\n' % (dst_addr, data_S)
         return byte_S
     
 
@@ -95,14 +96,14 @@ class Host:
                         + str(data_S)
         p = NetworkPacket(full_datagram)
         self.out_intf_L[0].put(p.to_byte_S()) #send packets always enqueued successfully
-
+        print 'Host_%s sending packet "%s"\n\n' % (self.addr, p.to_byte_S())
         self.packet_count += 1
 
     ## receive packet from the network layer
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
-#        if pkt_S is not None:
-#print('%s: received packet "%s"' % (self, pkt_S))
+        if pkt_S is not None:
+            print('%s: received packet "%s"\n' % (self, pkt_S))
        
     ## thread target for the host to keep receiving data
     def run(self):
@@ -129,10 +130,10 @@ class Router:
             print "Empty message foo"
             return None
         else:
-            dst_addr = input_string[16: 20]
-            source = input_string[12: 16]
-            header = input_string[0 : 19]
-            message = input_string[20 : ]
+            #dst_addr = input_string[16: 20]
+            #source = input_string[12: 16]
+            #header = input_string[0 : 19]
+            #message = input_string[20 : ]
             # return [ input_string [ i : i + self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
             # each message fragment should be max_mtu_size - 20 characters in length ( - 20 so that each can have a header)
             # fragments = [input_string [i:i+self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
@@ -145,12 +146,13 @@ class Router:
     ##@param name: friendly router name for debugging
     # @param intf_count: the number of input and output interfaces 
     # @param max_queue_size: max queue length (passed to Interface)
-    def __init__(self, name, intf_count, max_queue_size):
+    def __init__(self, name, intf_count, max_queue_size, routingTable):
         self.stop = False #for thread termination
         self.name = name
         #create a list of interfaces
         self.in_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
         self.out_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
+        self.routingTable = routingTable
 
     ## called when printing the object
     def __str__(self):
@@ -169,6 +171,7 @@ class Router:
                 if pkt_S is not None:
 
                     parsed_packet = NetworkPacket.from_byte_S(pkt_S) #parse a packet out
+                    #print parsed_packet
 #                     # get the intf numbers from the message
 #                     from_intf_num = int(re.findall('^\d+', str(parsed_packet))[0])
 # #                    if from_intf_num != None:
@@ -180,7 +183,7 @@ class Router:
 
                     # ID = str(parsed_packet[4]) + str(parsed_packet[5])
                     ID = parsed_packet[4:6]
-                    print "ID: " + str(ID)
+                    #print "ID: " + str(ID)
                     dst_addr = parsed_packet[16: 20]
                     source = parsed_packet[12: 16]
                     header = parsed_packet[0: 19]
@@ -189,19 +192,22 @@ class Router:
                     if len(parsed_packet) > self.max_mtu_size:
                         pure_message = parsed_packet[20 : ]
                         correctlysizedmessage = self.split_message(str(pure_message))
-                        print "correctlysizedmessage" + str(correctlysizedmessage)
+                        #print "correctlysizedmessage" + str(correctlysizedmessage)
                         for fragment in correctlysizedmessage:
                             well_formed_datagram = str(len(fragment)).zfill(4) + \
                                                    str(ID).zfill(2) + \
                                                    str(self.max_mtu_size - 20) + \
+                                                   '0000' + \
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
-                            print "WFD: " + well_formed_datagram
+                            print "WFD: " + well_formed_datagram + '\n'
+                            outInterface = self.routingTable[source]
+                            self.out_intf_L[outInterface].put(well_formed_datagram, True)
 
                     else:
-                        print "From " + str(source) + " to " + str(dst_addr) + ":"
-                        print message
+                        #print "From " + str(source) + " to " + str(dst_addr) + ": "
+                        #print pkt_S
                         self.out_intf_L[i].put(parsed_packet, True)
 
 

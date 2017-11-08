@@ -25,14 +25,16 @@ if __name__ == '__main__':
     server4 = network_3.Host(4)
     object_L.append(server4)
     
+    convergingRoutingTable = {'0001' : 0, '0002' : 1}
+    singleRouteRoutingTable = {'0001' : 0, '0002' : 0}
     
-    router_a = network_3.Router(name='A', intf_count=1, max_queue_size=router_queue_size)
+    router_a = network_3.Router(name='A', intf_count=2, max_queue_size=router_queue_size, routingTable=convergingRoutingTable)
     object_L.append(router_a)
-    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size)
+    router_b = network_3.Router(name='B', intf_count=1, max_queue_size=router_queue_size, routingTable=singleRouteRoutingTable)
     object_L.append(router_b)
-    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size)
+    router_c = network_3.Router(name='C', intf_count=1, max_queue_size=router_queue_size, routingTable=singleRouteRoutingTable)
     object_L.append(router_c)
-    router_d = network_3.Router(name='D', intf_count=1, max_queue_size=router_queue_size)
+    router_d = network_3.Router(name='D', intf_count=2, max_queue_size=router_queue_size, routingTable=convergingRoutingTable)
     object_L.append(router_d)
     # object_L = an object list
     
@@ -42,13 +44,13 @@ if __name__ == '__main__':
     
     #add all the links
     link_layer.add_link(link_3.Link(client1, 0, router_a, 0, 40))
-    link_layer.add_link(link_3.Link(client2, 0, router_a, 0, 40))
+    link_layer.add_link(link_3.Link(client2, 0, router_a, 1, 40))
     link_layer.add_link(link_3.Link(router_a, 0, router_b, 0, 40))
-    link_layer.add_link(link_3.Link(router_a, 0, router_c, 0, 40))
+    link_layer.add_link(link_3.Link(router_a, 1, router_c, 0, 40))
     link_layer.add_link(link_3.Link(router_b, 0, router_d, 0, 40))
-    link_layer.add_link(link_3.Link(router_c, 0, router_d, 0, 40))
+    link_layer.add_link(link_3.Link(router_c, 0, router_d, 1, 40))
     link_layer.add_link(link_3.Link(router_d, 0, server3, 0, 40))
-    link_layer.add_link(link_3.Link(router_d, 0, server4, 0, 40))
+    link_layer.add_link(link_3.Link(router_d, 1, server4, 0, 40))
     
     
     #start all the objects
@@ -69,8 +71,9 @@ if __name__ == '__main__':
     
     
     #create some send events    
-    for i in range(3):
-        client1.udt_send(2, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse feugiat, mauris amet.')
+    #for i in range(3):
+    client1.udt_send(3, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse feugiat, mauris amet.')
+    client2.udt_send(4, 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse feugiat, mauris amet.')
     
     
     #give the network sufficient time to transfer all packets before quitting
