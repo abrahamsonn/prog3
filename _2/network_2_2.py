@@ -109,18 +109,30 @@ class Host:
     ## thread target for the host to keep receiving data
     def run(self):
 #print (threading.currentThread().getName() + ': Starting')
-        list = []
+        firstMessage = []
+        secondMessage = []
+        thirdMessage = []
         while True:
             #receive data arriving to the in interface
             x = self.udt_receive()
             if x != None:
-                print "X EQUALS: " + x[6:8]
-                pos = int(x[6:11]) / 20
-                # print "pos = " + str(pos)
-                list.insert(pos, x[20: ])
+                id = int(x[4:6])
+                pos = int(x[6:8]) / 20
+                if id == 1:
+                    # print "pos = " + str(pos)
+                    firstMessage.insert(pos, x[20: ])
+                if id == 2:
+                    secondMessage.insert(pos, x[20: ])
+                if id == 3:
+                    thirdMessage.insert(pos, x[20: ])
             #terminate
             if(self.stop):
-                print "list = " + str(list)
+                if len(firstMessage) != 0:
+                    print "First Message: = " + ''.join(firstMessage)
+                if len(secondMessage) != 0:
+                    print "Second Message: = " + ''.join(secondMessage)
+                if len(thirdMessage) != 0:
+                    print "Third Message: = " + ''.join(thirdMessage)
 #print (threading.currentThread().getName() + ': Ending')
                 return
         
