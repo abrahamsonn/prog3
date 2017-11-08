@@ -212,8 +212,8 @@ class Router:
 
                     if len(parsed_packet) > self.max_mtu_size:
                         pure_message = parsed_packet[20 : ]
-                        print "Forwarding \"" + parsed_packet + "\" as the following: "
                         correctlysizedmessage = self.split_message(str(pure_message))
+                        st = "forwarding \"" + str(parsed_packet) + "\" as: \n"
                         # "correctlysizedmessage" + str(correctlysizedmessage)
                         index = 0
                         for fragment in correctlysizedmessage:
@@ -232,11 +232,13 @@ class Router:
 #                            print "source:                  " + str(source).zfill(4)
 #                            print "dest:                    " + str(dst_addr).zfill(4)
 
-                            print "\t" + well_formed_datagram
+                            st += "\t" + well_formed_datagram + "\n"
 
                             self.out_intf_L[i].put(well_formed_datagram, True)
 
                             index += 1
+
+                        print st
 
                     else:
                         print "From " + str(source) + " to " + str(dst_addr) + ":"
