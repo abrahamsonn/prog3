@@ -114,6 +114,7 @@ class Host:
             #receive data arriving to the in interface
             x = self.udt_receive()
             if x != None:
+                print "X EQUALS: " + x[6:8]
                 pos = int(x[6:11]) / 20
                 # print "pos = " + str(pos)
                 list.insert(pos, x[20: ])
@@ -202,7 +203,8 @@ class Router:
                         for fragment in correctlysizedmessage:
                             well_formed_datagram = str(len(fragment)).zfill(4) + \
                                                    str(ID).zfill(2) + \
-                                                   str((self.max_mtu_size - 20) * index).zfill(4) + \
+                                                   str((self.max_mtu_size - 20) * index).zfill(2) + \
+                                                   '0000' + \
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
