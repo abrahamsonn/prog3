@@ -88,7 +88,7 @@ class Host:
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst_addr, data_S):
         full_datagram = str(len(data_S)).zfill(4)\
-                        + str(self.packet_count).zfill(2)\
+                        + str(self.packet_count + self.addr * 10).zfill(2)\
                         + "00"\
                         + "0000"\
                         + str(self.addr).zfill(4)\
@@ -103,16 +103,32 @@ class Host:
     def udt_receive(self):
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            print('%s: received packet "%s"\n' % (self, pkt_S))
+            print('\n%s: received packet "%s"\n' % (self, pkt_S))
+            return pkt_S
        
     ## thread target for the host to keep receiving data
     def run(self):
 #print (threading.currentThread().getName() + ': Starting')
+        firstMessage = []
+        secondMessage = []
         while True:
             #receive data arriving to the in interface
-            self.udt_receive()
+            packet = self.udt_receive()
+            if packet != None:
+                id = int(packet[4:6])
+                pos = int(packet[6:8])
+
+                if id == 11:
+                    # print "pos = " + str(pos)
+                    firstMessage.insert(pos, packet[20: ])
+                if id == 21:
+                    secondMessage.insert(pos, packet[20: ])
             #terminate
             if(self.stop):
+                if len(firstMessage) != 0:
+                    print "First Message: = " + ''.join(firstMessage) + '\n'
+                if len(secondMessage) != 0:
+                    print "Second Message: = " + ''.join(secondMessage)
 #print (threading.currentThread().getName() + ': Ending')
                 return
         
@@ -126,18 +142,19 @@ class Router:
     def split_message(self, input_string):
         # thanks stack overflow! if only i could just use C instead
         message_length = len(input_string)
+        print len(input_string)
         if message_length <= 20:
             print "Empty message foo"
             return None
         else:
-            #dst_addr = input_string[16: 20]
-            #source = input_string[12: 16]
-            #header = input_string[0 : 19]
-            #message = input_string[20 : ]
+            dst_addr = input_string[16: 20]
+            source = input_string[12: 16]
+            header = input_string[0 : 19]
+            message = input_string[20 : ]
             # return [ input_string [ i : i + self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
             # each message fragment should be max_mtu_size - 20 characters in length ( - 20 so that each can have a header)
             # fragments = [input_string [i:i+self.max_mtu_size] for i in range(19, message_length), self.max_mtu_size]
-            fragments = [input_string [i:i+self.max_mtu_size] for i in range(0, message_length, self.max_mtu_size)]
+            fragments = [input_string [i:i+self.max_mtu_size - 20] for i in range(0, message_length, self.max_mtu_size - 20)]
             #print fragments
             return fragments
 
@@ -188,28 +205,35 @@ class Router:
                     source = parsed_packet[12: 16]
                     header = parsed_packet[0: 19]
                     message = parsed_packet[20:]
+                    printList = ["\nFrom " + str(source) + " to " + str(dst_addr) + ": "]
 
                     if len(parsed_packet) > self.max_mtu_size:
                         pure_message = parsed_packet[20 : ]
+                        printList.append("\"" + parsed_packet + "\" as the following: ")
                         correctlysizedmessage = self.split_message(str(pure_message))
-                        #print "correctlysizedmessage" + str(correctlysizedmessage)
+                        index = 0
                         for fragment in correctlysizedmessage:
                             well_formed_datagram = str(len(fragment)).zfill(4) + \
                                                    str(ID).zfill(2) + \
-                                                   str(self.max_mtu_size - 20) + \
+                                                   str((self.max_mtu_size - 20) * index).zfill(2) + \
                                                    '0000' + \
                                                    str(source).zfill(4) + \
                                                    str(dst_addr).zfill(4) + \
                                                    fragment
-                            print "WFD: " + well_formed_datagram + '\n'
                             outInterface = self.routingTable[source]
+                            printList.append("\n\t" + well_formed_datagram)
                             self.out_intf_L[outInterface].put(well_formed_datagram, True)
+                            
+                            index += 1
 
                     else:
-                        #print "From " + str(source) + " to " + str(dst_addr) + ": "
+                        printList.append(' ' + parsed_packet)
                         #print pkt_S
-                        self.out_intf_L[i].put(parsed_packet, True)
+                        outInterface = self.routingTable[source]
+                        self.out_intf_L[outInterface].put(parsed_packet, True)
 
+                    printList.append('\n\tFrom interface %d to interface %d on Router_%s' % (i, outInterface, self.name))
+                    print ''.join(printList)
 
                     # HERE you will need to implement a lookup into the 
                     # forwarding table to find the appropriate outgoing interface
